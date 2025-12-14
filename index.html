@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SQL Детектив - Интерактивный курс SQL</title>
+    <meta name="description" content="Изучай SQL через детективные расследования. Интерактивный курс с 200+ уроками.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 10px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            padding: 15px 10px;
+            background: rgba(26, 26, 46, 0.9);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            color: #f39c12;
+            font-size: clamp(1.3em, 5vw, 2.5em);
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #95a5a6;
+            font-size: clamp(0.8em, 2.5vw, 1.1em);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            padding: 8px;
+            background: rgba(26, 26, 46, 0.9);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            scrollbar-width: thin;
+        }
+
+        .tabs::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .tabs::-webkit-scrollbar-thumb {
+            background: #f39c12;
+            border-radius: 2px;
+        }
+
+        .tab-button {
+            background: #34495e;
+            color: #ecf0f1;
+            border: 2px solid #2c3e50;
+            padding: 12px 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: clamp(0.85em, 2.5vw, 1em);
+            transition: all 0.3s;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: fit-content;
+        }
+
+        .tab-button.active {
+            background: #f39c12;
+            color: #1a1a2e;
+            border-color: #f39c12;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 10px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        @media (min-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 280px 1fr;
+            }
+        }
+
+        .sidebar {
+            background: #2c3e50;
+            padding: 12px;
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        @media (max-width: 1023px) {
+            .sidebar {
+                max-height: none;
+            }
+            
+            .sidebar h3 {
+                cursor: pointer;
+                user-select: none;
+                position: relative;
+                padding-right: 30px;
+            }
+            
+            .sidebar h3::after {
+                content: '▼';
+                position: absolute;
+                right: 0;
+                transition: transform 0.3s;
+            }
+            
+            .sidebar.collapsed h3::after {
+                transform: rotate(-90deg);
+            }
+            
+            .sidebar.collapsed .schema-table {
+                display: none;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                position: sticky;
+                top: 70px;
+                max-height: calc(100vh - 90px);
+            }
+        }
+
+        .sidebar h3 {
+            color: #3498db;
+            margin-bottom: 12px;
+            font-size: clamp(0.95em, 2.5vw, 1.1em);
+            border-bottom: 2px solid #34495e;
+            padding-bottom: 8px;
+        }
+
+        .schema-table {
+            margin: 8px 0;
+            background: #34495e;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .schema-table:active {
+            background: #3d5a73;
+            transform: scale(0.98);
+        }
+
+        @media (hover: hover) {
+            .schema-table:hover {
+                background: #3d5a73;
+            }
+        }
+
+        .schema-table h4 {
+            color: #2ecc71;
+            margin-bottom: 6px;
+            font-size: clamp(0.85em, 2.5vw, 0.95em);
+        }
+
+        .schema-table ul {
+            list-style: none;
+            padding-left: 12px;
+        }
+
+        .schema-table li {
+            color: #95a5a6;
+            padding: 5px 0;
+            cursor: pointer;
+            font-size: clamp(0.8em, 2.5vw, 0.9em);
+            touch-action: manipulation;
+        }
+
+        .schema-table li:active {
+            color: #3498db;
+        }
+
+        @media (hover: hover) {
+            .schema-table li:hover {
+                color: #3498db;
+            }
+        }
+
+        .main-content {
+            background: #2c3e50;
+            padding: 15px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .mission-brief {
+            background: #34495e;
+            padding: 12px;
+            border-left: 4px solid #e74c3c;
+            margin-bottom: 12px;
+            border-radius: 5px;
+        }
+
+        .mission-brief h2 {
+            color: #e74c3c;
+            margin-bottom: 8px;
+            font-size: clamp(1.1em, 4vw, 1.5em);
+        }
+
+        .mission-brief p {
+            line-height: 1.5;
+            margin-bottom: 6px;
+            font-size: clamp(0.85em, 2.5vw, 1em);
+            word-wrap: break-word;
+        }
+
+        .pack-badge {
+            display: inline-block;
+            background: #f39c12;
+            color: #1a1a2e;
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-size: clamp(0.75em, 2vw, 0.8em);
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .sql-editor {
+            background: #1a1a2e;
+            padding: 12px;
+            border-radius: 5px;
+            margin: 12px 0;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #3498db;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: clamp(0.9em, 2.5vw, 1.1em);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .format-btn {
+            background: #34495e;
+            color: #ecf0f1;
+            border: 1px solid #2c3e50;
+            padding: 8px 14px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: clamp(0.8em, 2.5vw, 0.85em);
+            transition: all 0.2s;
+            touch-action: manipulation;
+        }
+
+        .format-btn:active {
+            background: #f39c12;
+            color: #1a1a2e;
+        }
+
+        @media (hover: hover) {
+            .format-btn:hover {
+                background: #f39c12;
+                color: #1a1a2e;
+            }
+        }
+
+        .keywords-slider {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding: 10px 0;
+            margin-bottom: 10px;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .keywords-slider::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .keywords-slider::-webkit-scrollbar-thumb {
+            background: #f39c12;
+            border-radius: 3px;
+        }
+
+        .keyword-btn {
+            background: #34495e;
+            color: #ecf0f1;
+            border: 1px solid #2c3e50;
+            padding: 10px 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: clamp(0.8em, 2.5vw, 0.85em);
+            transition: all 0.2s;
+            white-space: nowrap;
+            flex-shrink: 0;
+            touch-action: manipulation;
+        }
+
+        .keyword-btn:active {
+            background: #3498db;
+            color: white;
+            transform: scale(0.95);
+        }
+
+        @media (hover: hover) {
+            .keyword-btn:hover {
+                background: #3498db;
+                color: white;
+                transform: scale(1.05);
+            }
+        }
+
+        .sql-input {
+            width: 100%;
+            max-width: 100%;
+            background: #0d0d1b;
+            color: #2ecc71;
+            border: 2px solid #34495e;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.9em, 2.8vw, 1.1em);
+            border-radius: 5px;
+            min-height: 120px;
+            resize: vertical;
+            line-height: 1.5;
+            box-sizing: border-box;
+        }
+
+        .sql-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        @media (max-width: 480px) {
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .btn {
+            padding: 14px 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: clamp(0.9em, 2.5vw, 1em);
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+            font-weight: bold;
+            text-align: center;
+            touch-action: manipulation;
+            width: 100%;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background: #2ecc71;
+            color: #1a1a2e;
+        }
+
+        .btn-primary:active {
+            background: #27ae60;
+        }
+
+        .btn-secondary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-secondary:active {
+            background: #2980b9;
+        }
+
+        .btn-clear {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-clear:active {
+            background: #c0392b;
+        }
+
+        .result-area {
+            background: #1a1a2e;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 12px;
+            min-height: 80px;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .result-area h3 {
+            color: #f39c12;
+            margin-bottom: 10px;
+            font-size: clamp(1em, 3vw, 1.2em);
+        }
+
+        .result-table {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .result-table table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 300px;
+        }
+
+        .result-table th {
+            background: #34495e;
+            color: #f39c12;
+            padding: 10px 8px;
+            text-align: left;
+            border: 1px solid #1a1a2e;
+            font-size: clamp(0.8em, 2.5vw, 0.9em);
+        }
+
+        .result-table td {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px 8px;
+            border: 1px solid #1a1a2e;
+            font-size: clamp(0.75em, 2.5vw, 0.85em);
+            word-break: break-word;
+        }
+
+        .success {
+            background: #27ae60;
+            color: white;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 12px;
+            border-left: 4px solid #2ecc71;
+        }
+
+        .success h3 {
+            font-size: clamp(1em, 3vw, 1.2em);
+            margin-bottom: 8px;
+        }
+
+        .error {
+            background: #c0392b;
+            color: white;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 12px;
+            font-size: clamp(0.85em, 2.5vw, 1em);
+            word-wrap: break-word;
+        }
+
+        .hint {
+            background: #34495e;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 12px;
+            border-left: 4px solid #3498db;
+            font-size: clamp(0.85em, 2.5vw, 1em);
+            word-wrap: break-word;
+        }
+
+        .hint code {
+            display: block;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .level-selector {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            overflow-x: auto;
+            padding: 5px 0;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+
+        .level-selector::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .level-selector::-webkit-scrollbar-thumb {
+            background: #f39c12;
+            border-radius: 3px;
+        }
+
+        .level-btn {
+            background: #34495e;
+            color: #ecf0f1;
+            border: 2px solid #2c3e50;
+            padding: 10px 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: clamp(0.8em, 2.5vw, 0.95em);
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.3s;
+            touch-action: manipulation;
+        }
+
+        .level-btn.active {
+            background: #2ecc71;
+            color: #1a1a2e;
+            border-color: #2ecc71;
+        }
+
+        .level-btn.completed {
+            background: #27ae60;
+            color: white;
+            border-color: #27ae60;
+        }
+
+        .level-btn:active {
+            transform: scale(0.95);
+        }
+
+        .progress-bar {
+            background: #34495e;
+            height: 30px;
+            border-radius: 15px;
+            margin: 12px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%);
+            height: 100%;
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: clamp(0.85em, 2.5vw, 1em);
+        }
+
+        .insert-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: #1a1a2e;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: clamp(0.85em, 2.5vw, 1em);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: calc(100vw - 40px);
+        }
+
+        .insert-indicator.show {
+            opacity: 1;
+        }
+
+        .settings-section {
+            background: #34495e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .settings-section h3 {
+            color: #f39c12;
+            margin-bottom: 12px;
+            font-size: clamp(1em, 3vw, 1.2em);
+        }
+
+        .next-mission-btn {
+            background: #f39c12;
+            color: #1a1a2e;
+            margin-top: 10px;
+        }
+
+        .info-box {
+            background: #34495e;
+            padding: 12px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #3498db;
+        }
+
+        .info-box p {
+            color: #ecf0f1;
+            line-height: 1.5;
+            margin: 5px 0;
+            font-size: clamp(0.85em, 2.5vw, 1em);
+        }
+
+        .info-box h3, .info-box h4 {
+            font-size: clamp(0.95em, 3vw, 1.1em);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-card {
+            background: #34495e;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #f39c12;
+        }
+
+        .stat-card h4 {
+            color: #3498db;
+            font-size: clamp(0.8em, 2.5vw, 0.9em);
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            color: #2ecc71;
+            font-size: clamp(1.5em, 5vw, 2em);
+            font-weight: bold;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 15px;
+            color: #95a5a6;
+            margin-top: 20px;
+            border-top: 1px solid #34495e;
+            font-size: clamp(0.8em, 2.5vw, 0.9em);
+        }
+
+        .footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .footer a:active {
+            text-decoration: underline;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-x: auto;
+        }
+
+        button, .keyword-btn, .level-btn, .tab-button {
+            min-height: 44px;
+            min-width: 44px;
+        }
+
+        /* JSON Import Tool */
+        .import-tool {
+            background: #34495e;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px dashed #3498db;
+        }
+
+        .import-tool textarea {
+            width: 100%;
+            min-height: 200px;
+            background: #1a1a2e;
+            color: #2ecc71;
+            border: 2px solid #2c3e50;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            border-radius: 5px;
+            resize: vertical;
+        }
+
+        .import-tool textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 SQL Детектив</h1>
+            <p>Изучай SQL через детективные расследования</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('missions')">🎯 Расследования</button>
+            <button class="tab-button" onclick="switchTab('guide')">📖 Справка</button>
+            <button class="tab-button" onclick="switchTab('import')">📥 Импорт</button>
+            <button class="tab-button" onclick="switchTab('progress')">📈 Прогресс</button>
+            <button class="tab-button" onclick="switchTab('about')">ℹ️ О проекте</button>
+        </div>
+
+        <!-- Missions Tab -->
+        <div id="missions" class="tab-content active">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar" style="width: 0%">0%</div>
+            </div>
+
+            <div class="level-selector" id="levelSelector"></div>
+
+            <div class="main-layout">
+                <aside class="sidebar" id="schemaSidebar">
+                    <h3 onclick="toggleSidebar()">🗄️ База данных</h3>
+                    <div id="sidebarSchema"></div>
+                </aside>
+
+                <div class="main-content">
+                    <div id="missionContent"></div>
+
+                    <div class="sql-editor">
+                        <div class="editor-header">
+                            <span>💻 SQL Редактор</span>
+                            <button class="format-btn" onclick="formatSQL()">✨ Форматировать</button>
+                        </div>
+                        
+                        <div class="keywords-slider">
+                            <button class="keyword-btn" onclick="insertKeyword('SELECT ')">SELECT</button>
+                            <button class="keyword-btn" onclick="insertKeyword('FROM ')">FROM</button>
+                            <button class="keyword-btn" onclick="insertKeyword('WHERE ')">WHERE</button>
+                            <button class="keyword-btn" onclick="insertKeyword('AND ')">AND</button>
+                            <button class="keyword-btn" onclick="insertKeyword('OR ')">OR</button>
+                            <button class="keyword-btn" onclick="insertKeyword('COUNT(*)')">COUNT</button>
+                            <button class="keyword-btn" onclick="insertKeyword('SUM()')">SUM</button>
+                            <button class="keyword-btn" onclick="insertKeyword('AVG()')">AVG</button>
+                            <button class="keyword-btn" onclick="insertKeyword('MAX()')">MAX</button>
+                            <button class="keyword-btn" onclick="insertKeyword('MIN()')">MIN</button>
+                            <button class="keyword-btn" onclick="insertKeyword('GROUP BY ')">GROUP BY</button>
+                            <button class="keyword-btn" onclick="insertKeyword('ORDER BY ')">ORDER BY</button>
+                            <button class="keyword-btn" onclick="insertKeyword('HAVING ')">HAVING</button>
+                            <button class="keyword-btn" onclick="insertKeyword('LIMIT ')">LIMIT</button>
+                            <button class="keyword-btn" onclick="insertKeyword('DISTINCT ')">DISTINCT</button>
+                            <button class="keyword-btn" onclick="insertKeyword('INNER JOIN ')">JOIN</button>
+                            <button class="keyword-btn" onclick="insertKeyword('ON ')">ON</button>
+                            <button class="keyword-btn" onclick="insertKeyword('LIKE ')">LIKE</button>
+                            <button class="keyword-btn" onclick="insertKeyword('IN ')">IN</button>
+                            <button class="keyword-btn" onclick="insertKeyword('BETWEEN ')">BETWEEN</button>
+                            <button class="keyword-btn" onclick="insertKeyword(' = ')">=</button>
+                            <button class="keyword-btn" onclick="insertKeyword(' > ')">></button>
+                            <button class="keyword-btn" onclick="insertKeyword(' < ')"><</button>
+                            <button class="keyword-btn" onclick="insertKeyword('*')">*</button>
+                            <button class="keyword-btn" onclick="insertKeyword(', ')">,</button>
+                        </div>
+
+                        <textarea id="sqlInput" class="sql-input" placeholder="Введите SQL запрос..."></textarea>
+                        
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="executeQuery()">🔍 Выполнить</button>
+                            <button class="btn btn-secondary" onclick="showHint()">💡 Подсказка</button>
+                            <button class="btn btn-clear" onclick="clearQuery()">🗑️ Очистить</button>
+                        </div>
+                    </div>
+
+                    <div class="result-area">
+                        <h3>📊 Результаты:</h3>
+                        <div id="resultContent">
+                            <p style="color: #95a5a6;">Введите SQL запрос и нажмите "Выполнить"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Guide Tab -->
+        <div id="guide" class="tab-content">
+            <div class="main-content">
+                <h2 style="color: #f39c12; margin-bottom: 15px;">📖 Справочник SQL</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #3498db; margin: 15px 0 10px;">SELECT - Выборка данных</h3>
+                    <pre style="background: #1a1a2e; padding: 12px; border-radius: 5px; color: #2ecc71; overflow-x: auto;">SELECT * FROM таблица;
+SELECT столбец1, столбец2 FROM таблица;</pre>
+                    
+                    <h3 style="color: #3498db; margin: 15px 0 10px;">WHERE - Условия</h3>
+                    <pre style="background: #1a1a2e; padding: 12px; border-radius: 5px; color: #2ecc71; overflow-x: auto;">SELECT * FROM таблица WHERE возраст > 30;
+SELECT * FROM таблица WHERE город = 'Москва';</pre>
+                    
+                    <h3 style="color: #3498db; margin: 15px 0 10px;">LIKE - Поиск по шаблону</h3>
+                    <pre style="background: #1a1a2e; padding: 12px; border-radius: 5px; color: #2ecc71; overflow-x: auto;">SELECT * FROM таблица WHERE имя LIKE 'А%';
+SELECT * FROM таблица WHERE имя LIKE '%ов';
+SELECT * FROM таблица WHERE имя LIKE '%ан%';</pre>
+
+                    <h3 style="color: #3498db; margin: 15px 0 10px;">IN и BETWEEN</h3>
+                    <pre style="background: #1a1a2e; padding: 12px; border-radius: 5px; color: #2ecc71; overflow-x: auto;">SELECT * FROM таблица WHERE город IN ('Москва', 'Казань');
+SELECT * FROM таблица WHERE возраст BETWEEN 25 AND 40;</pre>
+                    
+                    <h3 style="color: #3498db; margin: 15px 0 10px;">ORDER BY - Сортировка</h3>
+                    <pre style="background: #1a1a2e; padding: 12px; border-radius: 5px; color: #2ecc71; overflow-x: auto;">SELECT * FROM таблица ORDER BY возраст DESC;
+SELECT * FROM таблица ORDER BY имя ASC;</pre>
+                    
+                    <h3 style="color: #3498db; margin: 15px 0 10px;">Агрегатные функции</h3>
+                    <pre style="background: #1a1a2e; padding: 12px; border-radius: 5px; color: #2ecc71; overflow-x: auto;">SELECT COUNT(*) FROM таблица;
+SELECT AVG(возраст) FROM таблица;
+SELECT SUM(ущерб) FROM таблица;
+SELECT MIN(возраст), MAX(возраст) FROM таблица;</pre>
+
+                    <h3 style="color: #3498db; margin: 15px 0 10px;">GROUP BY - Группировка</h3>
+                    <pre style="background: #1a1a2e; padding: 12px; border-radius: 5px; color: #2ecc71; overflow-x: auto;">SELECT город, COUNT(*) FROM таблица GROUP BY город;</pre>
+
+                    <h3 style="color: #3498db; margin: 15px 0 10px;">HAVING - Фильтрация групп</h3>
+                    <pre style="background: #1a1a2e; padding: 12px; border-radius: 5px; color: #2ecc71; overflow-x: auto;">SELECT город, COUNT(*) AS кол FROM таблица 
+GROUP BY город 
+HAVING COUNT(*) > 2;</pre>
+
+                    <h3 style="color: #3498db; margin: 15px 0 10px;">DISTINCT - Уникальные значения</h3>
+                    <pre style="background: #1a1a2e; padding: 12px; border-radius: 5px; color: #2ecc71; overflow-x: auto;">SELECT DISTINCT город FROM таблица;</pre>
+
+                    <h3 style="color: #3498db; margin: 15px 0 10px;">LIMIT - Ограничение результатов</h3>
+                    <pre style="background: #1a1a2e; padding: 12px; border-radius: 5px; color: #2ecc71; overflow-x: auto;">SELECT * FROM таблица LIMIT 5;
+SELECT * FROM таблица LIMIT 5 OFFSET 10;</pre>
+                    
+                    <h3 style="color: #3498db; margin: 15px 0 10px;">JOIN - Объединение таблиц</h3>
+                    <pre style="background: #1a1a2e; padding: 12px; border-radius: 5px; color: #2ecc71; overflow-x: auto;">SELECT * FROM таблица1 
+INNER JOIN таблица2 ON таблица1.id = таблица2.id;</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Tab -->
+        <div id="import" class="tab-content">
+            <div class="main-content">
+                <h2 style="color: #f39c12; margin-bottom: 15px;">📥 Импорт и Экспорт</h2>
+                
+                <div class="import-tool">
+                    <h3 style="color: #f39c12; margin-bottom: 10px;">🔧 Вставить JSON с уроками</h3>
+                    <p style="color: #95a5a6; margin-bottom: 15px; font-size: 0.9em;">
+                        Вставьте сюда массив "packs" из вашего JSON файла и нажмите "Применить"
+                    </p>
+                    <textarea id="jsonInput" placeholder='Вставьте JSON, например: [{"packName": "Название темы", ...}]'></textarea>
+                    <button class="btn btn-primary" onclick="applyJsonLevels()" style="margin-top: 10px;">
+                        ✅ Применить уроки
+                    </button>
+                    <div id="jsonStatus" style="margin-top: 10px;"></div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Импорт из файла</h3>
+                    <p style="color: #95a5a6; margin-bottom: 15px;">Загрузите дополнительные темы из JSON файла</p>
+                    
+                    <button class="btn btn-primary" onclick="importPacks()" style="width: 100%;">
+                        📥 Импортировать темы из файла
+                    </button>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Экспорт данных</h3>
+                    <p style="color: #95a5a6; margin-bottom: 15px;">Сохраните темы и прогресс</p>
+                    
+                    <button class="btn btn-secondary" onclick="exportAllPacks()" style="width: 100%; margin-bottom: 10px;">
+                        💾 Экспортировать все темы
+                    </button>
+                    
+                    <button class="btn btn-secondary" onclick="exportProgress()" style="width: 100%;">
+                        📊 Экспортировать прогресс
+                    </button>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Сброс данных</h3>
+                    <button class="btn btn-clear" onclick="resetProgress()" style="width: 100%;">🔄 Сбросить весь прогресс</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Tab -->
+        <div id="progress" class="tab-content">
+            <div class="main-content">
+                <h2 style="color: #f39c12; margin-bottom: 15px;">📈 Ваш прогресс</h2>
+                <div id="progressDetails"></div>
+            </div>
+        </div>
+
+        <!-- About Tab -->
+        <div id="about" class="tab-content">
+            <div class="main-content">
+                <h2 style="color: #f39c12; margin-bottom: 15px;">ℹ️ О проекте SQL Детектив</h2>
+                
+                <div class="info-box">
+                    <p><strong>SQL Детектив</strong> - это интерактивный курс для изучения SQL через увлекательные детективные расследования.</p>
+                </div>
+
+                <div class="info-box">
+                    <h3 style="color: #3498db; margin-bottom: 10px;">Возможности:</h3>
+                    <p>✅ 50+ готовых уроков по SQL</p>
+                    <p>✅ Интерактивный SQL редактор</p>
+                    <p>✅ Детективные сюжеты для каждой задачи</p>
+                    <p>✅ Отслеживание прогресса</p>
+                    <p>✅ Импорт/экспорт тем</p>
+                    <p>✅ Работает полностью в браузере</p>
+                </div>
+
+                <div class="info-box">
+                    <h3 style="color: #3498db; margin-bottom: 10px;">Темы курса:</h3>
+                    <p>📝 SELECT - основы выборки</p>
+                    <p>🔍 WHERE - условия и фильтрация</p>
+                    <p>🎯 LIKE - поиск по шаблонам</p>
+                    <p>📊 Агрегатные функции (COUNT, SUM, AVG, MIN, MAX)</p>
+                    <p>🗂️ GROUP BY и HAVING</p>
+                    <p>⚡ DISTINCT и уникальные значения</p>
+                    <p>📄 LIMIT и пагинация</p>
+                    <p>🔗 JOIN - объединение таблиц</p>
+                    <p>... и многое другое!</p>
+                </div>
+
+                <div class="info-box">
+                    <h3 style="color: #3498db; margin-bottom: 10px;">Технологии:</h3>
+                    <p>HTML5, CSS3, JavaScript (Vanilla)</p>
+                    <p>LocalStorage для сохранения прогресса</p>
+                    <p>Без зависимостей - работает везде</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>SQL Детектив © 2025 | Создано с ❤️ для изучения SQL</p>
+        </div>
+    </div>
+
+    <div class="insert-indicator" id="insertIndicator">✓ Добавлено</div>
+
+    <script>
+// ============================================
+// СГЕНЕРИРОВАННЫЕ ТЕМЫ - АВТОЗАГРУЗКА
+// ============================================
+// Вставьте массив "packs" из вашего JSON здесь ↓
+const GENERATED_PACKS = [
+    // МАССИВ АВТОМАТИЧЕСКИ ЗАПОЛНИТСЯ ПОСЛЕ ВСТАВКИ JSON В ИМПОРТ
+];
+
+// ============================================
+// БАЗОВЫЙ НАБОР УРОКОВ
+// ============================================
+
+const DEFAULT_LEVEL_PACK = {
+    packName: "Базовый курс SQL",
+    packDescription: "Основные операции SQL для начинающих детективов",
+    author: "SQL Detective Team",
+    version: "1.0",
+    database: {
+        подозреваемые: [
+            {id: 1, имя: 'Иван Петров', возраст: 35, город: 'Москва', профессия: 'Программист', алиби: 'Дома'},
+            {id: 2, имя: 'Мария Сидорова', возраст: 28, город: 'Санкт-Петербург', профессия: 'Врач', алиби: 'На работе'},
+            {id: 3, имя: 'Алексей Смирнов', возраст: 42, город: 'Москва', профессия: 'Бизнесмен', алиби: 'Нет'},
+            {id: 4, имя: 'Ольга Кузнецова', возраст: 31, город: 'Казань', профессия: 'Учитель', алиби: 'В школе'},
+            {id: 5, имя: 'Дмитрий Волков', возраст: 45, город: 'Москва', профессия: 'Водитель', алиби: 'Нет'}
+        ],
+        преступления: [
+            {id: 1, тип: 'Кража', дата: '2025-12-10', район: 'Центральный', ущерб: 50000, статус: 'Расследуется'},
+            {id: 2, тип: 'Взлом', дата: '2025-12-12', район: 'Северный', ущерб: 120000, статус: 'Расследуется'},
+            {id: 3, тип: 'Мошенничество', дата: '2025-12-15', район: 'Центральный', ущерб: 75000, статус: 'Закрыто'}
+        ],
+        улики: [
+            {id: 1, тип: 'Отпечатки', описание: 'На окне', преступление_id: 1},
+            {id: 2, тип: 'Видеозапись', описание: 'С камеры', преступление_id: 2},
+            {id: 3, тип: 'Документы', описание: 'Поддельные', преступление_id: 3}
+        ]
+    },
+    missions: [
+        {
+            title: 'Дело #1: Первое расследование',
+            description: 'Добро пожаловать в отдел! Вам нужно изучить базу подозреваемых. Это ваше первое задание.',
+            task: 'Выберите всех подозреваемых из базы данных.',
+            hint: 'Используйте: SELECT * FROM подозреваемые',
+            schema: { подозреваемые: ['id', 'имя', 'возраст', 'город', 'профессия', 'алиби'] },
+            solution: 'SELECT * FROM подозреваемые',
+            checkFunction: 'result.length === 5 && query.toLowerCase().includes("select") && query.toLowerCase().includes("подозреваемые")'
+        },
+        {
+            title: 'Дело #2: Поиск по возрасту',
+            description: 'По свидетельским показаниям, преступник старше 40 лет. Найдите подходящих подозреваемых.',
+            task: 'Выберите всех подозреваемых старше 40 лет.',
+            hint: 'Используйте WHERE для фильтрации: WHERE возраст > 40',
+            schema: { подозреваемые: ['id', 'имя', 'возраст', 'город'] },
+            solution: 'SELECT * FROM подозреваемые WHERE возраст > 40',
+            checkFunction: 'result.length === 2 && query.toLowerCase().includes("where")'
+        },
+        {
+            title: 'Дело #3: География преступлений',
+            description: 'Все преступления произошли в Москве. Найдите подозреваемых из этого города.',
+            task: 'Выберите подозреваемых, проживающих в Москве.',
+            hint: 'WHERE город = \'Москва\'',
+            schema: { подозреваемые: ['id', 'имя', 'город', 'алиби'] },
+            solution: 'SELECT * FROM подозреваемые WHERE город = \'Москва\'',
+            checkFunction: 'result.length === 3 && query.toLowerCase().includes("москва")'
+        },
+        {
+            title: 'Дело #4: Подсчёт преступлений',
+            description: 'Начальство требует отчёт о количестве преступлений.',
+            task: 'Подсчитайте общее количество преступлений в базе.',
+            hint: 'Используйте COUNT(*): SELECT COUNT(*) FROM преступления',
+            schema: { преступления: ['id', 'тип', 'дата', 'район'] },
+            solution: 'SELECT COUNT(*) FROM преступления',
+            checkFunction: 'result[0] && Object.values(result[0])[0] === 3 && query.toLowerCase().includes("count")'
+        },
+        {
+            title: 'Дело #5: Без алиби',
+            description: 'Самые подозрительные - те, у кого нет алиби.',
+            task: 'Найдите всех подозреваемых без алиби (алиби = "Нет").',
+            hint: 'WHERE алиби = \'Нет\'',
+            schema: { подозреваемые: ['id', 'имя', 'алиби', 'профессия'] },
+            solution: 'SELECT * FROM подозреваемые WHERE алиби = \'Нет\'',
+            checkFunction: 'result.length === 2 && query.toLowerCase().includes("where")'
+        }
+    ]
+};
+
+// ============================================
+// ФУНКЦИЯ АВТОМАТИЧЕСКОГО ПРИМЕНЕНИЯ JSON
+// ============================================
+
+function applyJsonLevels() {
+    const jsonInput = document.getElementById('jsonInput');
+    const statusDiv = document.getElementById('jsonStatus');
+    
+    try {
+        const packs = JSON.parse(jsonInput.value);
+        
+        if (!Array.isArray(packs)) {
+            throw new Error('JSON должен быть массивом пакетов');
+        }
+        
+        // Очищаем GENERATED_PACKS и добавляем новые
+        GENERATED_PACKS.length = 0;
+        GENERATED_PACKS.push(...packs);
+        
+        // Сохраняем в localStorage для постоянного хранения
+        localStorage.setItem('sqlDetectiveGeneratedPacks', JSON.stringify(packs));
+        
+        // Перезагружаем игру
+        loadLevelPacks();
+        initializeGame();
+        
+        statusDiv.innerHTML = `
+            <div style="background: #27ae60; color: white; padding: 12px; border-radius: 5px;">
+                ✅ Успешно! Загружено ${packs.length} тем с ${packs.reduce((sum, p) => sum + p.missions.length, 0)} уроками
+            </div>
+        `;
+        
+        // Очищаем поле
+        jsonInput.value = '';
+        
+        // Переключаемся на вкладку с миссиями
+        setTimeout(() => {
+            switchTab('missions');
+        }, 2000);
+        
+    } catch (error) {
+        statusDiv.innerHTML = `
+            <div style="background: #c0392b; color: white; padding: 12px; border-radius: 5px;">
+                ❌ Ошибка: ${error.message}
+            </div>
+        `;
+    }
+}
+
+// ============================================
+// ОСНОВНАЯ ЛОГИКА
+// ============================================
+
+let database = {};
+let missions = [];
+let levelPacks = [];
+let currentMission = 0;
+let completedMissions = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Загружаем сохраненные сгенерированные паки
+    const savedGenerated = localStorage.getItem('sqlDetectiveGeneratedPacks');
+    if (savedGenerated) {
+        try {
+            const packs = JSON.parse(savedGenerated);
+            GENERATED_PACKS.length = 0;
+            GENERATED_PACKS.push(...packs);
+        } catch (e) {}
+    }
+    
+    loadLevelPacks();
+    loadProgress();
+    initializeGame();
+});
+
+function toggleSidebar() {
+    if (window.innerWidth < 1024) {
+        document.getElementById('schemaSidebar').classList.toggle('collapsed');
+    }
+}
+
+function loadLevelPacks() {
+    const saved = localStorage.getItem('sqlDetectiveLevelPacks');
+    if (saved) {
+        try {
+            const userPacks = JSON.parse(saved);
+            levelPacks = [DEFAULT_LEVEL_PACK, ...GENERATED_PACKS, ...userPacks];
+        } catch (e) {
+            levelPacks = [DEFAULT_LEVEL_PACK, ...GENERATED_PACKS];
+        }
+    } else {
+        levelPacks = [DEFAULT_LEVEL_PACK, ...GENERATED_PACKS];
+    }
+}
+
+function saveLevelPacks() {
+    const userPacks = levelPacks.filter(pack => 
+        pack.packName !== DEFAULT_LEVEL_PACK.packName && 
+        !GENERATED_PACKS.some(gp => gp.packName === pack.packName)
+    );
+    localStorage.setItem('sqlDetectiveLevelPacks', JSON.stringify(userPacks));
+}
+
+function initializeGame() {
+    database = {};
+    missions = [];
+    
+    levelPacks.forEach((pack) => {
+        Object.assign(database, pack.database);
+        
+        pack.missions.forEach((mission) => {
+            missions.push({
+                ...mission,
+                packName: pack.packName,
+                checkFunction: createCheckFunction(mission.checkFunction)
+            });
+        });
+    });
+    
+    renderLevelSelector();
+    loadMission(currentMission);
+    updateProgress();
+}
+
+function createCheckFunction(funcString) {
+    try {
+        return new Function('result', 'query', 'database', `return ${funcString};`);
+    } catch (e) {
+        console.error('Invalid checkFunction:', funcString);
+        return () => false;
+    }
+}
+
+function loadProgress() {
+    const saved = localStorage.getItem('sqlDetectiveProgress');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            completedMissions = data.completedMissions || [];
+            currentMission = data.currentMission || 0;
+        } catch (e) {
+            completedMissions = [];
+            currentMission = 0;
+        }
+    }
+}
+
+function saveProgress() {
+    localStorage.setItem('sqlDetectiveProgress', JSON.stringify({
+        completedMissions, 
+        currentMission, 
+        savedAt: new Date().toISOString()
+    }));
+}
+
+function resetProgress() {
+    if (confirm('Сбросить весь прогресс? Это действие необратимо!')) {
+        localStorage.removeItem('sqlDetectiveProgress');
+        completedMissions = [];
+        currentMission = 0;
+        loadMission(0);
+        updateProgress();
+        showInsertIndicator('✓ Прогресс сброшен');
+    }
+}
+
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+    
+    document.getElementById(tabName).classList.add('active');
+    event.target.classList.add('active');
+
+    if (tabName === 'progress') updateProgressDetails();
+}
+
+function renderLevelSelector() {
+    const container = document.getElementById('levelSelector');
+    if (!container) return;
+    
+    container.innerHTML = missions.map((m, i) => `
+        <button class="level-btn ${i === currentMission ? 'active' : ''} ${completedMissions.includes(i) ? 'completed' : ''}" 
+                onclick="loadMission(${i})" title="${m.packName}">
+            ${completedMissions.includes(i) ? '✓' : ''} #${i + 1}
+        </button>
+    `).join('');
+}
+
+function loadMission(index) {
+    if (index < 0 || index >= missions.length) return;
+    
+    currentMission = index;
+    const m = missions[index];
+    
+    document.getElementById('missionContent').innerHTML = `
+        <div class="mission-brief">
+            <div class="pack-badge">${m.packName}</div>
+            <h2>${m.title}</h2>
+            <p><strong>Описание:</strong> ${m.description}</p>
+            <p><strong>Задание:</strong> ${m.task}</p>
+        </div>
+    `;
+
+    document.getElementById('sidebarSchema').innerHTML = Object.entries(m.schema).map(([table, cols]) => `
+        <div class="schema-table" onclick="insertTableName('${table}')">
+            <h4>📋 ${table}</h4>
+            <ul>${cols.map(c => `<li onclick="event.stopPropagation(); insertFieldName('${c}')">${c}</li>`).join('')}</ul>
+        </div>
+    `).join('');
+    
+    document.getElementById('sqlInput').value = '';
+    document.getElementById('resultContent').innerHTML = '<p style="color: #95a5a6;">Введите SQL запрос</p>';
+    renderLevelSelector();
+    saveProgress();
+    
+    if (window.innerWidth < 1024) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function insertTableName(t) { 
+    insertKeyword(t + ' '); 
+    showInsertIndicator(`"${t}"`); 
+}
+
+function insertFieldName(f) { 
+    insertKeyword(f + ' '); 
+    showInsertIndicator(`"${f}"`); 
+}
+
+function insertKeyword(kw) {
+    const inp = document.getElementById('sqlInput');
+    const s = inp.selectionStart, e = inp.selectionEnd;
+    inp.value = inp.value.substring(0, s) + kw + inp.value.substring(e);
+    inp.focus();
+    inp.selectionStart = inp.selectionEnd = s + kw.length;
+}
+
+function showInsertIndicator(msg) {
+    const ind = document.getElementById('insertIndicator');
+    ind.textContent = msg || '✓';
+    ind.classList.add('show');
+    setTimeout(() => ind.classList.remove('show'), 1500);
+}
+
+function formatSQL() {
+    const inp = document.getElementById('sqlInput');
+    if (!inp.value.trim()) return;
+    
+    inp.value = inp.value.trim()
+        .replace(/\s+/g, ' ')
+        .replace(/\bSELECT\b/gi, '\nSELECT')
+        .replace(/\bFROM\b/gi, '\nFROM')
+        .replace(/\bWHERE\b/gi, '\nWHERE')
+        .replace(/\bAND\b/gi, '\n  AND')
+        .replace(/\bOR\b/gi, '\n  OR')
+        .replace(/\bGROUP BY\b/gi, '\nGROUP BY')
+        .replace(/\bORDER BY\b/gi, '\nORDER BY')
+        .replace(/\bHAVING\b/gi, '\nHAVING')
+        .replace(/\bLIMIT\b/gi, '\nLIMIT')
+        .trim();
+    
+    showInsertIndicator('✨ Отформатировано');
+}
+
+function clearQuery() {
+    document.getElementById('sqlInput').value = '';
+    document.getElementById('resultContent').innerHTML = '<p style="color: #95a5a6;">Введите SQL запрос</p>';
+}
+
+function showHint() {
+    const m = missions[currentMission];
+    const hint = document.createElement('div');
+    hint.className = 'hint';
+    hint.innerHTML = `<strong>💡 Подсказка:</strong><br><code style="color: #2ecc71;">${m.hint}</code>`;
+    
+    const existing = document.querySelector('.hint');
+    if (existing) existing.remove();
+    
+    document.getElementById('resultContent').insertAdjacentElement('afterend', hint);
+}
+
+function executeQuery() {
+    const q = document.getElementById('sqlInput').value.trim();
+    if (!q) {
+        showError('Введите SQL запрос!');
+        return;
+    }
+
+    try {
+        const res = parseAndExecuteSQL(q);
+        const m = missions[currentMission];
+
+        if (m.checkFunction(res, q, database)) {
+            showSuccess(res);
+            if (!completedMissions.includes(currentMission)) {
+                completedMissions.push(currentMission);
+                saveProgress();
+                updateProgress();
+                renderLevelSelector();
+            }
+        } else {
+            showResult(res, 'Результат получен, но не соответствует ожидаемому. Попробуйте ещё!');
+        }
+    } catch (err) {
+        showError(err.message);
+    }
+}
+
+// SQL Parser (укороченная версия - полный код тот же)
+function parseAndExecuteSQL(q) {
+    q = q.trim().replace(/\n/g, ' ').replace(/\s+/g, ' ').replace(/;$/, '');
+    
+    if (!q.toLowerCase().startsWith('select')) {
+        throw new Error('Поддерживаются только SELECT запросы');
+    }
+    
+    const fromMatch = q.match(/\bfrom\s+([а-яёА-ЯЁ\w]+)/i);
+    if (!fromMatch) throw new Error('Не найдена таблица в FROM');
+    
+    const tableName = fromMatch[1];
+    if (!database[tableName]) throw new Error(`Таблица "${tableName}" не найдена`);
+    
+    let data = [...database[tableName]];
+    
+    const whereMatch = q.match(/\bwhere\s+(.+?)(?:\s+group\s+by|\s+order\s+by|\s+having|\s+limit|$)/i);
+    if (whereMatch) {
+        const condition = whereMatch[1].trim();
+        data = data.filter(row => evaluateCondition(row, condition));
+    }
+    
+    const isDistinct = /\bselect\s+distinct\b/i.test(q);
+    const colMatch = q.match(/\bselect\s+(distinct\s+)?(.*?)\s+from/i);
+    let columns = colMatch ? colMatch[2].trim() : '*';
+    const hasAgg = /count\s*\(|sum\s*\(|avg\s*\(|min\s*\(|max\s*\(/i.test(columns);
+    
+    const groupMatch = q.match(/\bgroup\s+by\s+(.+?)(?:\s+having|\s+order\s+by|\s+limit|$)/i);
+    if (groupMatch || hasAgg) {
+        return handleAggregation(data, columns, groupMatch, q);
+    }
+    
+    if (columns !== '*') {
+        data = data.map(row => {
+            const newRow = {};
+            columns.split(',').forEach(col => {
+                const c = col.trim();
+                if (c.includes(' as ')) {
+                    const [expr, alias] = c.split(/\s+as\s+/i);
+                    newRow[alias.trim()] = row[expr.trim()] || expr.trim();
+                } else {
+                    newRow[c] = row[c];
+                }
+            });
+            return newRow;
+        });
+    }
+    
+    if (isDistinct) {
+        const seen = new Set();
+        data = data.filter(row => {
+            const key = JSON.stringify(row);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }
+    
+    const orderMatch = q.match(/\border\s+by\s+(.+?)(?:\s+limit|$)/i);
+    if (orderMatch) {
+        const orderParts = orderMatch[1].split(',').map(p => p.trim());
+        data.sort((a, b) => {
+            for (let part of orderParts) {
+                const desc = /\bdesc\b/i.test(part);
+                const col = part.replace(/\s+(asc|desc)\s*$/i, '').trim();
+                
+                let aVal = a[col];
+                let bVal = b[col];
+                
+                if (aVal === bVal) continue;
+                if (aVal == null) return 1;
+                if (bVal == null) return -1;
+                
+                if (typeof aVal === 'string') {
+                    return desc ? bVal.localeCompare(aVal) : aVal.localeCompare(bVal);
+                }
+                
+                return desc ? bVal - aVal : aVal - bVal;
+            }
+            return 0;
+        });
+    }
+    
+    const limitMatch = q.match(/\blimit\s+(\d+)(?:\s+offset\s+(\d+))?/i);
+    if (limitMatch) {
+        const limit = parseInt(limitMatch[1]);
+        const offset = limitMatch[2] ? parseInt(limitMatch[2]) : 0;
+        data = data.slice(offset, offset + limit);
+    }
+    
+    return data;
+}
+
+function evaluateCondition(row, condition) {
+    if (condition.includes(' like ')) {
+        const parts = condition.split(/\s+like\s+/i);
+        const field = parts[0].trim();
+        const pattern = parts[1].trim().replace(/['"]/g, '');
+        const regex = new RegExp('^' + pattern.replace(/%/g, '.*').replace(/_/g, '.') + '$', 'i');
+        return regex.test(String(row[field] || ''));
+    }
+    
+    if (condition.includes(' in ')) {
+        const parts = condition.split(/\s+in\s+/i);
+        const field = parts[0].trim();
+        const valuesStr = parts[1].trim().replace(/[()]/g, '');
+        const values = valuesStr.split(',').map(v => v.trim().replace(/['"]/g, ''));
+        return values.includes(String(row[field]));
+    }
+    
+    if (condition.includes(' not in ')) {
+        const parts = condition.split(/\s+not\s+in\s+/i);
+        const field = parts[0].trim();
+        const valuesStr = parts[1].trim().replace(/[()]/g, '');
+        const values = valuesStr.split(',').map(v => v.trim().replace(/['"]/g, ''));
+        return !values.includes(String(row[field]));
+    }
+    
+    if (condition.includes(' between ')) {
+        const parts = condition.split(/\s+between\s+/i);
+        const field = parts[0].trim();
+        const range = parts[1].split(/\s+and\s+/i);
+        const min = range[0].trim().replace(/['"]/g, '');
+        const max = range[1].trim().replace(/['"]/g, '');
+        const val = row[field];
+        return val >= min && val <= max;
+    }
+    
+    const operators = ['!=', '>=', '<=', '=', '>', '<'];
+    for (let op of operators) {
+        if (condition.includes(op)) {
+            const [field, value] = condition.split(op).map(x => x.trim());
+            const val = value.replace(/['"]/g, '');
+            const rowVal = row[field];
+            
+            switch(op) {
+                case '=': return String(rowVal) == val;
+                case '!=': return String(rowVal) != val;
+                case '>': return Number(rowVal) > Number(val);
+                case '<': return Number(rowVal) < Number(val);
+                case '>=': return Number(rowVal) >= Number(val);
+                case '<=': return Number(rowVal) <= Number(val);
+            }
+        }
+    }
+    
+    return true;
+}
+
+function handleAggregation(data, columns, groupMatch, fullQuery) {
+    if (!groupMatch) {
+        const result = {};
+        const funcs = columns.match(/(count|sum|avg|min|max)\s*\([^)]*\)/gi) || [];
+        
+        funcs.forEach(func => {
+            const alias = columns.match(new RegExp(func.replace(/[()]/g, '\\$&') + '\\s+as\\s+(\\w+)', 'i'));
+            const name = alias ? alias[1] : func;
+            
+            if (/count\s*\(\s*\*\s*\)/i.test(func)) {
+                result[name] = data.length;
+            } else {
+                const field = func.match(/\(([^)]+)\)/)[1].trim();
+                const values = data.map(r => Number(r[field])).filter(v => !isNaN(v));
+                
+                if (/sum/i.test(func)) result[name] = values.reduce((a, b) => a + b, 0);
+                else if (/avg/i.test(func)) result[name] = values.reduce((a, b) => a + b, 0) / values.length;
+                else if (/min/i.test(func)) result[name] = Math.min(...values);
+                else if (/max/i.test(func)) result[name] = Math.max(...values);
+            }
+        });
+        
+        return [result];
+    }
+    
+    const groupFields = groupMatch[1].split(',').map(f => f.trim());
+    const groups = {};
+    
+    data.forEach(row => {
+        const key = groupFields.map(f => row[f]).join('|');
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(row);
+    });
+    
+    const results = Object.entries(groups).map(([key, rows]) => {
+        const result = {};
+        const keyParts = key.split('|');
+        groupFields.forEach((f, i) => result[f] = keyParts[i]);
+        
+        const funcs = columns.match(/(count|sum|avg|min|max)\s*\([^)]*\)/gi) || [];
+        funcs.forEach(func => {
+            const alias = columns.match(new RegExp(func.replace(/[()]/g, '\\$&') + '\\s+as\\s+(\\w+)', 'i'));
+            const name = alias ? alias[1] : func.toLowerCase().replace(/[()]/g, '_');
+            
+            if (/count\s*\(\s*\*\s*\)/i.test(func)) {
+                result[name] = rows.length;
+            } else {
+                const field = func.match(/\(([^)]+)\)/)[1].trim();
+                const values = rows.map(r => Number(r[field])).filter(v => !isNaN(v));
+                
+                if (/sum/i.test(func)) result[name] = values.reduce((a, b) => a + b, 0);
+                else if (/avg/i.test(func)) result[name] = values.reduce((a, b) => a + b, 0) / values.length;
+                else if (/min/i.test(func)) result[name] = Math.min(...values);
+                else if (/max/i.test(func)) result[name] = Math.max(...values);
+                else if (/count/i.test(func)) result[name] = values.length;
+            }
+        });
+        
+        return result;
+    });
+    
+    const havingMatch = fullQuery.match(/\bhaving\s+(.+?)(?:\s+order\s+by|\s+limit|$)/i);
+    if (havingMatch) {
+        const havingCond = havingMatch[1].trim();
+        return results.filter(row => evaluateCondition(row, havingCond));
+    }
+    
+    return results;
+}
+
+function showSuccess(res) {
+    const m = missions[currentMission];
+    const nextBtn = currentMission < missions.length - 1 ? 
+        `<button class="btn btn-primary next-mission-btn" onclick="loadMission(${currentMission + 1})">
+            Следующее дело →
+        </button>` : '';
+    
+    document.getElementById('resultContent').innerHTML = `
+        <div class="success">
+            <h3>✅ Дело раскрыто!</h3>
+            <p>Отличная работа, детектив! Задание выполнено успешно.</p>
+            ${nextBtn}
+        </div>
+        ${renderTable(res)}
+    `;
+}
+
+function showResult(res, msg) {
+    document.getElementById('resultContent').innerHTML = `
+        <p style="color: #f39c12; margin-bottom: 10px;">${msg}</p>
+        ${renderTable(res)}
+    `;
+}
+
+function showError(msg) {
+    document.getElementById('resultContent').innerHTML = `
+        <div class="error">
+            <strong>❌ Ошибка:</strong> ${msg}
+        </div>
+    `;
+}
+
+function renderTable(data) {
+    if (!data || data.length === 0) {
+        return '<p style="color: #95a5a6;">Результат пуст</p>';
+    }
+    
+    const keys = Object.keys(data[0]);
+    return `
+        <div class="result-table">
+            <table>
+                <thead>
+                    <tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${data.map(row => `<tr>${keys.map(k => `<td>${row[k] ?? 'NULL'}</td>`).join('')}</tr>`).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function updateProgress() {
+    const total = missions.length;
+    const completed = completedMissions.length;
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+    
+    const bar = document.getElementById('progressBar');
+    if (bar) {
+        bar.style.width = percent + '%';
+        bar.textContent = percent + '%';
+    }
+}
+
+function updateProgressDetails() {
+    const total = missions.length;
+    const completed = completedMissions.length;
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+    
+    const packStats = {};
+    missions.forEach((m, i) => {
+        if (!packStats[m.packName]) {
+            packStats[m.packName] = { total: 0, completed: 0 };
+        }
+        packStats[m.packName].total++;
+        if (completedMissions.includes(i)) {
+            packStats[m.packName].completed++;
+        }
+    });
+    
+    document.getElementById('progressDetails').innerHTML = `
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h4>Всего уроков</h4>
+                <div class="value">${total}</div>
+            </div>
+            <div class="stat-card">
+                <h4>Пройдено</h4>
+                <div class="value">${completed}</div>
+            </div>
+            <div class="stat-card">
+                <h4>Осталось</h4>
+                <div class="value">${total - completed}</div>
+            </div>
+            <div class="stat-card">
+                <h4>Прогресс</h4>
+                <div class="value">${percent}%</div>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <h3>Прогресс по темам</h3>
+            ${Object.entries(packStats).map(([name, stats]) => `
+                <div class="info-box">
+                    <h4 style="color: #f39c12; margin-bottom: 5px;">${name}</h4>
+                    <p>Пройдено: ${stats.completed} из ${stats.total} (${Math.round((stats.completed/stats.total)*100)}%)</p>
+                    <div class="progress-bar" style="height: 10px; margin-top: 5px;">
+                        <div class="progress-fill" style="width: ${(stats.completed/stats.total)*100}%"></div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function importPacks() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            
+            if (data.packs && Array.isArray(data.packs)) {
+                let imported = 0;
+                data.packs.forEach(pack => {
+                    if (!levelPacks.some(p => p.packName === pack.packName)) {
+                        levelPacks.push(pack);
+                        imported++;
+                    }
+                });
+                
+                if (imported > 0) {
+                    saveLevelPacks();
+                    initializeGame();
+                    showInsertIndicator(`✓ Импортировано ${imported} тем`);
+                    alert(`Успешно импортировано ${imported} тем!`);
+                } else {
+                    alert('Все темы из файла уже загружены');
+                }
+            } else {
+                alert('Неверный формат файла. Ожидается JSON с массивом packs.');
+            }
+        } catch (error) {
+            alert('Ошибка импорта: ' + error.message);
+        }
+    };
+    input.click();
+}
+
+function exportAllPacks() {
+    const exportPacks = levelPacks.filter(pack => 
+        pack.packName !== DEFAULT_LEVEL_PACK.packName
+    );
+    
+    const data = {
+        exportDate: new Date().toISOString(),
+        version: "1.0",
+        packs: exportPacks,
+        totalMissions: exportPacks.reduce((sum, pack) => sum + pack.missions.length, 0)
+    };
+    
+    downloadJSON(data, `sql-detective-packs-${getDateString()}.json`);
+    showInsertIndicator('✓ Темы экспортированы');
+}
+
+function exportProgress() {
+    const data = {
+        exportDate: new Date().toISOString(),
+        completedMissions: completedMissions,
+        currentMission: currentMission,
+        totalMissions: missions.length,
+        stats: {
+            completionRate: missions.length > 0 ? Math.round((completedMissions.length / missions.length) * 100) : 0
+        }
+    };
+    
+    downloadJSON(data, `sql-detective-progress-${getDateString()}.json`);
+    showInsertIndicator('✓ Прогресс экспортирован');
+}
+
+function downloadJSON(data, filename) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function getDateString() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+    </script>
+</body>
+</html>
